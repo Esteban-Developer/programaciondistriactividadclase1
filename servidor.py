@@ -1,15 +1,40 @@
 import socket
+import threading
 
+def handle_client(conn, addr):
+    print(f"Cliente conectado desde {addr}")
+    
+    try:
+        # Recibir el nombre del cliente
+        student_name = conn.recv(1024).decode()
+        
+        # Mostrar el nombre en el servidor
+        print(f"Nombre del cliente: {student_name}")
+        
+        # Respuesta personalizada
+        response = f"Hola {student_name}, estás conectado a un servidor concurrente!"
+        conn.sendall(response.encode())
+
+    except Exception as e:
+        print(f"Error con {addr}: {e}")
+    
+    finally:
+        conn.close()
+        print(f"Conexión cerrada con {addr}\n")
+
+# Crear socket del servidor
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(("127.0.0.1", 5000))
-server.listen(1)
+server.bind(("0.0.0.0", 5000))
+server.listen(5)
 
-print("Servidor esperando conexión...")
+print("Servidor concurrente escuchando...")
 
-conn, addr = server.accept()
-print("Cliente conectado:", addr)
-
-nombre_estudiante = "Esteban Murillo"
-conn.sendall(nombre_estudiante.encode())
-
-conn.close()
+while True:
+    conn, addr = server.accept()
+    
+    # Crear un hilo por cada cliente
+    client_thread = threading.Thread(
+        target=handle_client,
+        args=(conn, addr)
+    )
+    client_thread.start()
